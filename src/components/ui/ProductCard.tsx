@@ -8,8 +8,11 @@ import { Product } from "@/data/mockProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { useCart } from "@/context/CartContext";
 
 export function ProductCard({ product }: { product: Product }) {
+  const { addToCart } = useCart();
+
   // Formatar preço para o padrão brasileiro (Reais)
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -68,11 +71,12 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         </CardContent>
         
-        <CardFooter className="p-5 pt-0">
+        <CardFooter className="p-5 justify-center">
           <Button 
             className="w-full gap-2 transition-all" 
             disabled={!product.inStock}
             variant={product.inStock ? "default" : "secondary"}
+            onClick={() => addToCart(product)}
           >
             <ShoppingCart className="h-4 w-4" />
             {product.inStock ? "Adicionar ao Carrinho" : "Indisponível"}

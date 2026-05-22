@@ -3,6 +3,8 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { CartProvider } from "@/context/CartContext";
+import { CartDrawer } from "@/components/layout/CartDrawer";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -30,11 +32,14 @@ export default function RootLayout({
       className={`${inter.variable} ${outfit.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <Navbar />
-        <main className="flex-1 flex flex-col">
-          {children}
-        </main>
-        <Footer />
+        <CartProvider>
+          <Navbar />
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+          <Footer />
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );

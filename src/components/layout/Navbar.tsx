@@ -1,9 +1,14 @@
+"use client";
+
 import Link from 'next/link';
 import { ShoppingCart, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useCart } from '@/context/CartContext';
 
 export function Navbar() {
+  const { cartCount, setIsCartOpen } = useCart();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md dark:bg-black/80">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -30,11 +35,18 @@ export function Navbar() {
             <Search className="h-5 w-5" />
             <span className="sr-only">Buscar</span>
           </Button>
-          <Button variant="ghost" size="icon" className="relative overflow-visible">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsCartOpen(true)}
+            className="relative overflow-visible"
+          >
             <ShoppingCart className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              0
-            </span>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {cartCount}
+              </span>
+            )}
             <span className="sr-only">Carrinho</span>
           </Button>
           <Button variant="ghost" size="icon" className="md:hidden">
