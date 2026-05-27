@@ -12,7 +12,7 @@ type CartContextType = {
   items: CartItem[];
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -27,17 +27,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Carregar dados do localStorage após a montagem do componente no cliente (evita erros de hidratação)
   useEffect(() => {
-    setIsMounted(true);
     const savedCart = localStorage.getItem("hetz_cart");
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error("Erro ao ler dados do carrinho do localStorage:", error);
+    setTimeout(() => {
+      setIsMounted(true);
+      if (savedCart) {
+        try {
+          setItems(JSON.parse(savedCart));
+        } catch (error) {
+          console.error("Erro ao ler dados do carrinho do localStorage:", error);
+        }
       }
-    }
+    }, 0);
   }, []);
 
   // Salvar no localStorage sempre que o carrinho mudar
@@ -47,17 +48,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, isMounted]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, quantity = 1) => {
     setItems((prevItems) => {
       const existingItem = prevItems.find((item) => item.product.id === product.id);
       if (existingItem) {
         return prevItems.map((item) =>
           item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      return [...prevItems, { product, quantity: 1 }];
+      return [...prevItems, { product, quantity }];
     });
     // Opcional: abre o carrinho automaticamente ao adicionar
     setIsCartOpen(true);

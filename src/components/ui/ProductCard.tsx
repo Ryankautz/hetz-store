@@ -9,9 +9,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: Product }) {
-  const { addToCart } = useCart();
+  const { addToCart, removeFromCart } = useCart();
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    toast.success(`${product.name} adicionado ao carrinho!`, {
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          removeFromCart(product.id);
+          toast.info(`${product.name} removido do carrinho.`);
+        },
+      },
+    });
+  };
 
   // Formatar preço para o padrão brasileiro (Reais)
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
@@ -75,8 +89,8 @@ export function ProductCard({ product }: { product: Product }) {
           <Button 
             className="w-full gap-2 transition-all" 
             disabled={!product.inStock}
-            variant={product.inStock ? "default" : "secondary"}
-            onClick={() => addToCart(product)}
+            variant={product.inStock ? "gradient" : "secondary"}
+            onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4" />
             {product.inStock ? "Adicionar ao Carrinho" : "Indisponível"}

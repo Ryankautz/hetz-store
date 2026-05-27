@@ -5,6 +5,7 @@ import { ShoppingCart, Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export function Navbar() {
   const { cartCount, setIsCartOpen } = useCart();
@@ -35,6 +36,9 @@ export function Navbar() {
             <Search className="h-5 w-5" />
             <span className="sr-only">Buscar</span>
           </Button>
+          
+          <ThemeToggle />
+          
           <Button 
             variant="ghost" 
             size="icon" 
