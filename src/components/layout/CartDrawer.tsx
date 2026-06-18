@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, Trash2, ShoppingCart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -203,9 +204,11 @@ export function CartDrawer() {
                   Impostos e custos de envio serão calculados na finalização do pedido.
                 </p>
                 <div className="grid grid-cols-1 gap-2 pt-2">
-                  <Button size="lg" className="w-full font-medium">
-                    Finalizar Compra
-                  </Button>
+                  <Link href="/checkout" onClick={() => setIsCartOpen(false)} className="w-full">
+                    <Button size="lg" className="w-full font-medium">
+                      Finalizar Compra
+                    </Button>
+                  </Link>
                   <Button
                     variant="ghost"
                     size="sm"

@@ -4,12 +4,13 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Star, Minus, Plus, ShoppingCart, Truck, ShieldCheck, CreditCard } from "lucide-react";
+import { Star, Minus, Plus, ShoppingCart, Truck, ShieldCheck, CreditCard, Heart } from "lucide-react";
 import { Product } from "@/data/mockProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { toast } from "sonner";
 
@@ -20,7 +21,9 @@ interface ProductDetailsProps {
 
 export function ProductDetails({ product, relatedProducts }: ProductDetailsProps) {
   const { addToCart, removeFromCart } = useCart();
+  const { isFavorite, toggleFavorite } = useWishlist();
   const [quantity, setQuantity] = useState(1);
+  const isFav = isFavorite(product.id);
 
   // Formatar preço
   const formatPrice = (value: number) => {
@@ -176,7 +179,7 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
                 ))}
               </div>
               <span className="text-sm font-semibold">{product.rating}</span>
-              <span className="text-xs text-muted-foreground">| 34 avaliações dos clientes</span>
+              <span className="text-xs text-muted-foreground">| {product.reviewCount} avaliações dos clientes</span>
             </div>
 
             {/* Preço */}
@@ -267,16 +270,47 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
                     <ShoppingCart className="h-5 w-5" />
                     Adicionar ao Carrinho
                   </Button>
+                  
+                  {/* Botão Favoritar */}
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="h-11 px-4 gap-2"
+                    onClick={() => toggleFavorite(product.id)}
+                  >
+                    <Heart 
+                      className={`h-5 w-5 transition-colors ${
+                        isFav ? "fill-red-500 text-red-500" : ""
+                      }`} 
+                    />
+                    <span className="sr-only">Favoritar</span>
+                  </Button>
                 </div>
               ) : (
-                <Button
-                  disabled
-                  variant="secondary"
-                  size="lg"
-                  className="w-full h-11 gap-2 font-semibold"
-                >
-                  Indisponível no Momento
-                </Button>
+                <div className="flex gap-4">
+                  <Button
+                    disabled
+                    variant="secondary"
+                    size="lg"
+                    className="flex-1 h-11 gap-2 font-semibold"
+                  >
+                    Indisponível no Momento
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="h-11 px-4 gap-2"
+                    onClick={() => toggleFavorite(product.id)}
+                  >
+                    <Heart 
+                      className={`h-5 w-5 transition-colors ${
+                        isFav ? "fill-red-500 text-red-500" : ""
+                      }`} 
+                    />
+                    <span className="sr-only">Favoritar</span>
+                  </Button>
+                </div>
               )}
 
               {/* Benefícios */}

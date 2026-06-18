@@ -1,118 +1,105 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Image from "next/image";
+import { useState, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, 
-  SlidersHorizontal, 
-  X, 
-  RotateCcw, 
-  Music, 
-  Sparkles, 
-  ArrowUpDown
+import {
+  Search,
+  SlidersHorizontal,
+  X,
+  RotateCcw,
+  Package,
+  ArrowUpDown,
 } from "lucide-react";
 import { Product } from "@/data/mockProducts";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { FadeIn } from "@/components/ui/FadeIn";
 
-interface GuitarCatalogProps {
-  initialProducts: Product[];
+interface ProductCatalogProps {
+  allProducts: Product[];
 }
 
-const BRANDS = ["Fender", "Gibson", "PRS", "Ibanez", "Gretsch", "Epiphone"];
+const CATEGORIES = ["Guitarras", "Áudio Pro", "Teclas", "Acessórios", "Baterias"];
 
-export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
-  // Estados para filtros
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState<string>("all");
+export function ProductCatalog({ allProducts }: ProductCatalogProps) {
+  return (
+    <Suspense fallback={<ProductCatalogFallback />}>
+      <ProductCatalogInner allProducts={allProducts} />
+    </Suspense>
+  );
+}
+
+function ProductCatalogFallback() {
+  return (
+    <div className="flex flex-col min-h-screen bg-zinc-50/40 dark:bg-zinc-950/20">
+      <section className="w-full bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800/60 py-12 md:py-16">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-lg mx-auto mb-3 animate-pulse" />
+          <div className="h-5 w-96 max-w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg mx-auto animate-pulse" />
+        </div>
+      </section>
+      <section className="container mx-auto px-4 md:px-6 py-12 flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-80 bg-zinc-100 dark:bg-zinc-900 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ProductCatalogInner({ allProducts }: ProductCatalogProps) {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [priceLimit, setPriceLimit] = useState<number>(() => {
-    if (initialProducts.length === 0) return 20000;
-    return Math.max(...initialProducts.map((p) => p.price));
+    if (allProducts.length === 0) return 20000;
+    return Math.max(...allProducts.map((p) => p.price));
   });
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  // Mapeia e descobre a marca de um produto
-  const getProductBrand = (name: string) => {
-    const nameLower = name.toLowerCase();
-    for (const brand of BRANDS) {
-      if (nameLower.includes(brand.toLowerCase())) {
-        return brand;
-      }
-    }
-    return "Outro";
-  };
-
-  // Contagem dinâmica de guitarras por marca (baseada em todos os produtos da categoria)
-  const brandCounts = useMemo(() => {
-    const counts = BRANDS.reduce((acc, brand) => {
-      acc[brand] = 0;
-      return acc;
-    }, {} as Record<string, number>);
-
-    counts["all"] = initialProducts.length;
-
-    initialProducts.forEach((p) => {
-      const brand = getProductBrand(p.name);
-      if (counts[brand] !== undefined) {
-        counts[brand]++;
-      }
-    });
-
-    return counts;
-  }, [initialProducts]);
-
-  // Faixa de preço dinâmica baseada nos produtos disponíveis
   const maxAvailablePrice = useMemo(() => {
-    if (initialProducts.length === 0) return 20000;
-    return Math.max(...initialProducts.map((p) => p.price));
-  }, [initialProducts]);
+    if (allProducts.length === 0) return 20000;
+    return Math.max(...allProducts.map((p) => p.price));
+  }, [allProducts]);
 
   const minAvailablePrice = useMemo(() => {
-    if (initialProducts.length === 0) return 0;
-    return Math.min(...initialProducts.map((p) => p.price));
-  }, [initialProducts]);
+    if (allProducts.length === 0) return 0;
+    return Math.min(...allProducts.map((p) => p.price));
+  }, [allProducts]);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: allProducts.length };
+    CATEGORIES.forEach((cat) => {
+      counts[cat] = allProducts.filter((p) => p.category === cat).length;
+    });
+    return counts;
+  }, [allProducts]);
 
-  // Filtra os produtos reativamente
   const filteredProducts = useMemo(() => {
-    return initialProducts
+    return allProducts
       .filter((product) => {
-        // Filtro de Texto
         const matchesSearch = product.name
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
-        
-        // Filtro de Marca
-        const brand = getProductBrand(product.name);
-        const matchesBrand =
-          selectedBrand === "all" ||
-          brand.toLowerCase() === selectedBrand.toLowerCase();
-
-        // Filtro de Preço
+        const matchesCategory =
+          selectedCategory === "all" || product.category === selectedCategory;
         const matchesPrice = product.price <= priceLimit;
-
-        // Filtro de Estoque
         const matchesStock = !inStockOnly || product.inStock;
-
-        return matchesSearch && matchesBrand && matchesPrice && matchesStock;
+        return matchesSearch && matchesCategory && matchesPrice && matchesStock;
       })
       .sort((a, b) => {
-        // Lógica de ordenação
-        if (sortBy === "price-asc") {
-          return a.price - b.price;
-        }
-        if (sortBy === "price-desc") {
-          return b.price - a.price;
-        }
-        if (sortBy === "rating-desc") {
-          return b.rating - a.rating;
-        }
-        // Destaques (Novos primeiro, depois melhor avaliação)
+        if (sortBy === "price-asc") return a.price - b.price;
+        if (sortBy === "price-desc") return b.price - a.price;
+        if (sortBy === "rating-desc") return b.rating - a.rating;
         if (sortBy === "featured") {
           if (a.isNew && !b.isNew) return -1;
           if (!a.isNew && b.isNew) return 1;
@@ -120,33 +107,30 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
         }
         return 0;
       });
-  }, [initialProducts, searchQuery, selectedBrand, priceLimit, inStockOnly, sortBy]);
+  }, [allProducts, searchQuery, selectedCategory, priceLimit, inStockOnly, sortBy]);
 
-  // Verifica se qualquer filtro foi alterado
   const isFiltersDirty = useMemo(() => {
     return (
       searchQuery !== "" ||
-      selectedBrand !== "all" ||
+      selectedCategory !== "all" ||
       priceLimit < maxAvailablePrice ||
       inStockOnly === true
     );
-  }, [searchQuery, selectedBrand, priceLimit, inStockOnly, maxAvailablePrice]);
+  }, [searchQuery, selectedCategory, priceLimit, inStockOnly, maxAvailablePrice]);
 
-  // Função para limpar todos os filtros
   const handleClearFilters = () => {
     setSearchQuery("");
-    setSelectedBrand("all");
+    setSelectedCategory("all");
     setPriceLimit(maxAvailablePrice);
     setInStockOnly(false);
     setSortBy("featured");
   };
 
-  // Formatar valor para BRL
   const formatBRL = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
@@ -161,7 +145,7 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Nome da guitarra..."
+            placeholder="Nome do produto..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-10 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
@@ -169,35 +153,39 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
         </div>
       </div>
 
-      {/* Marcas */}
+      {/* Categorias */}
       <div className="space-y-2">
         <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">
-          Marca
+          Categoria
         </label>
         <div className="space-y-1">
           <button
-            onClick={() => setSelectedBrand("all")}
+            onClick={() => setSelectedCategory("all")}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedBrand === "all"
+              selectedCategory === "all"
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-zinc-100 dark:hover:bg-zinc-900 text-foreground"
             }`}
           >
-            <span>Todas as Marcas</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              selectedBrand === "all" ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
-            }`}>
-              {brandCounts["all"]}
+            <span>Todas as Categorias</span>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                selectedCategory === "all"
+                  ? "bg-white/20 text-white"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
+              }`}
+            >
+              {categoryCounts["all"]}
             </span>
           </button>
-          
-          {BRANDS.map((brand) => {
-            const isSelected = selectedBrand.toLowerCase() === brand.toLowerCase();
-            const count = brandCounts[brand] || 0;
+
+          {CATEGORIES.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            const count = categoryCounts[cat] || 0;
             return (
               <button
-                key={brand}
-                onClick={() => setSelectedBrand(brand.toLowerCase())}
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
                 disabled={count === 0}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   isSelected
@@ -205,10 +193,14 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
                     : "hover:bg-zinc-100 dark:hover:bg-zinc-900 text-foreground"
                 }`}
               >
-                <span>{brand}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  isSelected ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
-                }`}>
+                <span>{cat}</span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    isSelected
+                      ? "bg-white/20 text-white"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
+                  }`}
+                >
                   {count}
                 </span>
               </button>
@@ -231,9 +223,10 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
           type="range"
           min={minAvailablePrice}
           max={maxAvailablePrice}
-          step={500}
+          step={100}
           value={priceLimit}
           onChange={(e) => setPriceLimit(Number(e.target.value))}
+          aria-label="Preço máximo"
           className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
         <div className="flex justify-between text-xs text-muted-foreground">
@@ -273,71 +266,49 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50/40 dark:bg-zinc-950/20">
-      {/* Hero Category Banner */}
-      <section className="relative w-full h-[320px] md:h-[400px] flex items-center justify-center overflow-hidden border-b border-zinc-200 dark:border-zinc-800/60">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=2000&auto=format&fit=crop"
-            alt="Fundo Guitarras"
-            fill
-            className="object-cover brightness-[0.25] dark:brightness-[0.15]"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-80" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/40" />
-        </div>
-        
-        <div className="container relative z-10 mx-auto px-4 md:px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="space-y-4"
-          >
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-500 border border-amber-500/20 uppercase tracking-widest backdrop-blur-sm">
-              <Sparkles className="h-3 w-3" />
-              Estúdio & Palco
+      {/* Header Section */}
+      <section className="w-full bg-white dark:bg-black border-b border-zinc-200 dark:border-zinc-800/60 py-12 md:py-16">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <FadeIn delay={0.1}>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/5 dark:bg-primary/10 px-3 py-1 text-xs font-semibold text-primary border border-primary/10 uppercase tracking-widest mb-4">
+              <Package className="h-3 w-3" />
+              Catálogo Completo
             </span>
-            <h1 className="font-heading text-4xl md:text-6xl font-bold tracking-tight text-white">
-              Guitarras{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600">
-                Lendárias
-              </span>
+            <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-3">
+              Todos os Produtos
             </h1>
-            <p className="text-zinc-300 max-w-xl mx-auto text-sm md:text-base leading-relaxed">
-              Explore nossa curadoria de guitarras de alto nível. Tons vintage, precisão moderna e a pegada que seu som merece.
+            <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base leading-relaxed">
+              Encontre o equipamento ideal para a sua música. Guitarras,
+              microfones, teclados, pedais e muito mais.
             </p>
-          </motion.div>
+          </FadeIn>
         </div>
       </section>
 
-      {/* Main Catalog Section */}
+      {/* Main Catalog */}
       <section className="container mx-auto px-4 md:px-6 py-12 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
           {/* Sidebar de Filtros - Desktop */}
           <aside className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24 bg-white dark:bg-zinc-900/60 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
               <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800/60 mb-6">
                 <h3 className="font-heading font-semibold text-lg flex items-center gap-2">
-                  <SlidersHorizontal className="h-4.5 w-4.5 text-amber-500" />
+                  <SlidersHorizontal className="h-4.5 w-4.5 text-primary" />
                   Filtros
                 </h3>
                 {isFiltersDirty && (
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  <span className="h-2 w-2 rounded-full bg-primary" />
                 )}
               </div>
               {renderFilters()}
             </div>
           </aside>
 
-          {/* Catalogo de Produtos */}
+          {/* Product Grid */}
           <div className="lg:col-span-3 space-y-6">
-            
-            {/* Header de Ações (Filtros mobile, totalizadores e ordenação) */}
+            {/* Action Header */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200/80 dark:border-zinc-800/50">
               <div className="flex items-center justify-between sm:justify-start gap-4">
-                {/* Botão de Filtros Mobile */}
                 <Button
                   variant="outline"
                   onClick={() => setIsMobileFiltersOpen(true)}
@@ -346,19 +317,28 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
                   <SlidersHorizontal className="h-4 w-4" />
                   Filtros
                   {isFiltersDirty && (
-                    <Badge variant="default" className="h-4 px-1 text-[9px] min-w-4 justify-center bg-amber-500 text-white rounded-full">
+                    <Badge
+                      variant="default"
+                      className="h-4 px-1 text-[9px] min-w-4 justify-center bg-primary text-primary-foreground rounded-full"
+                    >
                       !
                     </Badge>
                   )}
                 </Button>
-                
-                {/* Totalizador */}
+
                 <p className="text-sm text-muted-foreground">
-                  Mostrando <span className="font-semibold text-foreground">{filteredProducts.length}</span> de <span className="font-semibold text-foreground">{initialProducts.length}</span> guitarras
+                  Mostrando{" "}
+                  <span className="font-semibold text-foreground">
+                    {filteredProducts.length}
+                  </span>{" "}
+                  de{" "}
+                  <span className="font-semibold text-foreground">
+                    {allProducts.length}
+                  </span>{" "}
+                  produtos
                 </p>
               </div>
 
-              {/* Ordenador */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground whitespace-nowrap hidden sm:inline flex items-center gap-1">
                   <ArrowUpDown className="h-3 w-3" /> Ordenar por:
@@ -368,17 +348,25 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="h-9 rounded-lg border border-input bg-transparent px-3 py-1 text-sm font-medium transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-zinc-900 cursor-pointer text-foreground"
                 >
-                  <option value="featured" className="dark:bg-zinc-900">Destaques</option>
-                  <option value="price-asc" className="dark:bg-zinc-900">Preço: Menor ao Maior</option>
-                  <option value="price-desc" className="dark:bg-zinc-900">Preço: Maior ao Menor</option>
-                  <option value="rating-desc" className="dark:bg-zinc-900">Melhor Avaliadas</option>
+                  <option value="featured" className="dark:bg-zinc-900">
+                    Destaques
+                  </option>
+                  <option value="price-asc" className="dark:bg-zinc-900">
+                    Preço: Menor ao Maior
+                  </option>
+                  <option value="price-desc" className="dark:bg-zinc-900">
+                    Preço: Maior ao Menor
+                  </option>
+                  <option value="rating-desc" className="dark:bg-zinc-900">
+                    Melhor Avaliadas
+                  </option>
                 </select>
               </div>
             </div>
 
-            {/* Grid de Cartas com Animação */}
+            {/* Product Grid with Animation */}
             {filteredProducts.length > 0 ? (
-              <motion.div 
+              <motion.div
                 layout
                 className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
               >
@@ -399,18 +387,20 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
                 </AnimatePresence>
               </motion.div>
             ) : (
-              // Estado Vazio (Empty State)
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col items-center justify-center text-center py-20 px-4 bg-white dark:bg-zinc-900/20 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800"
               >
                 <div className="h-16 w-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-6">
-                  <Music className="h-8 w-8 text-muted-foreground" />
+                  <Package className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="font-heading text-xl font-bold mb-2">Nenhuma guitarra encontrada</h3>
+                <h3 className="font-heading text-xl font-bold mb-2">
+                  Nenhum produto encontrado
+                </h3>
                 <p className="text-muted-foreground max-w-sm text-sm mb-8 leading-relaxed">
-                  Não encontramos nenhuma guitarra correspondente aos filtros selecionados. Tente expandir seu orçamento ou buscar outra marca.
+                  Não encontramos nenhum produto correspondente aos filtros
+                  selecionados. Tente ajustar sua busca ou limpar os filtros.
                 </p>
                 <Button onClick={handleClearFilters} className="gap-2">
                   <RotateCcw className="h-4 w-4" />
@@ -422,11 +412,10 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
         </div>
       </section>
 
-      {/* Drawer de Filtros Mobile */}
+      {/* Mobile Filters Drawer */}
       <AnimatePresence>
         {isMobileFiltersOpen && (
           <div className="fixed inset-0 z-50 flex justify-end lg:hidden">
-            {/* Backdrop com blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -434,8 +423,6 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
               onClick={() => setIsMobileFiltersOpen(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             />
-            
-            {/* Conteúdo do Drawer */}
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -445,7 +432,7 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
             >
               <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800 mb-6">
                 <h3 className="font-heading font-semibold text-lg flex items-center gap-2">
-                  <SlidersHorizontal className="h-4.5 w-4.5 text-amber-500" />
+                  <SlidersHorizontal className="h-4.5 w-4.5 text-primary" />
                   Filtros
                 </h3>
                 <button
@@ -456,11 +443,7 @@ export function GuitarCatalog({ initialProducts }: GuitarCatalogProps) {
                   <span className="sr-only">Fechar</span>
                 </button>
               </div>
-
-              <div className="flex-1">
-                {renderFilters()}
-              </div>
-
+              <div className="flex-1">{renderFilters()}</div>
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-6 flex gap-3">
                 <Button
                   variant="outline"

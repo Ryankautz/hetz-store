@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { Toaster } from "sonner";
@@ -42,13 +43,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <CartProvider>
-            <Navbar />
-            <main className="flex-1 flex flex-col">
-              {children}
-            </main>
-            <Footer />
-            <CartDrawer />
-            <Toaster richColors position="bottom-right" />
+            <WishlistProvider>
+              <Navbar />
+              <main className="flex-1 flex flex-col">
+                {children}
+              </main>
+              <Footer />
+              <CartDrawer />
+              <Toaster richColors position="bottom-right" />
+            </WishlistProvider>
           </CartProvider>
         </ThemeProvider>
       </body>

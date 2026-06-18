@@ -6,6 +6,7 @@ export type Product = {
   originalPrice?: number;
   image: string;
   rating: number;
+  reviewCount: number;
   isNew?: boolean;
   inStock: boolean;
 };
@@ -19,6 +20,7 @@ export const products: Product[] = [
     originalPrice: 12500,
     image: "/fender-stratocaster.png",
     rating: 4.9,
+    reviewCount: 87,
     isNew: true,
     inStock: true,
   },
@@ -29,6 +31,7 @@ export const products: Product[] = [
     price: 1250,
     image: "/audio-technica-m50x.png",
     rating: 4.8,
+    reviewCount: 234,
     inStock: true,
   },
   {
@@ -39,6 +42,7 @@ export const products: Product[] = [
     originalPrice: 550,
     image: "/boss-ds1-pedal.png",
     rating: 4.7,
+    reviewCount: 156,
     inStock: true,
   },
   {
@@ -48,6 +52,7 @@ export const products: Product[] = [
     price: 3200,
     image: "/shure-sm7b.png",
     rating: 5.0,
+    reviewCount: 312,
     inStock: true,
   },
   {
@@ -57,6 +62,7 @@ export const products: Product[] = [
     price: 5800,
     image: "/korg-minilogue-xd.png",
     rating: 4.9,
+    reviewCount: 45,
     isNew: true,
     inStock: true,
   },
@@ -67,6 +73,7 @@ export const products: Product[] = [
     price: 7500,
     image: "/pearl-export-drums.png",
     rating: 4.6,
+    reviewCount: 28,
     inStock: false,
   },
   {
@@ -77,6 +84,7 @@ export const products: Product[] = [
     originalPrice: 19900,
     image: "/gibson-les-paul.png",
     rating: 4.9,
+    reviewCount: 63,
     isNew: true,
     inStock: true,
   },
@@ -87,6 +95,7 @@ export const products: Product[] = [
     price: 7200,
     image: "/prs-custom-24.png",
     rating: 4.8,
+    reviewCount: 91,
     isNew: false,
     inStock: true,
   },
@@ -97,6 +106,7 @@ export const products: Product[] = [
     price: 8500,
     image: "/ibanez-rg550.png",
     rating: 4.7,
+    reviewCount: 42,
     isNew: false,
     inStock: true,
   },
@@ -107,6 +117,7 @@ export const products: Product[] = [
     price: 4500,
     image: "/epiphone-goldtop.png",
     rating: 4.5,
+    reviewCount: 178,
     isNew: false,
     inStock: true,
   },
@@ -117,6 +128,7 @@ export const products: Product[] = [
     price: 6800,
     image: "/fender-telecaster.png",
     rating: 4.7,
+    reviewCount: 54,
     isNew: false,
     inStock: false,
   },
@@ -128,6 +140,7 @@ export const products: Product[] = [
     originalPrice: 4890,
     image: "/gretsch-g2622.png",
     rating: 4.6,
+    reviewCount: 37,
     isNew: true,
     inStock: true,
   },
@@ -138,7 +151,8 @@ export const products: Product[] = [
     price: 14500,
     image: "/gibson-sg.png",
     rating: 4.8,
+    reviewCount: 72,
     isNew: false,
     inStock: true,
-  }
+  },
 ];

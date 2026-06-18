@@ -3,16 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star, Heart } from "lucide-react";
 import { Product } from "@/data/mockProducts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart, removeFromCart } = useCart();
+  const { isFavorite, toggleFavorite } = useWishlist();
+  const isFav = isFavorite(product.id);
 
   const handleAddToCart = () => {
     addToCart(product);
@@ -39,7 +42,7 @@ export function ProductCard({ product }: { product: Product }) {
       transition={{ duration: 0.2 }}
       className="group h-full"
     >
-      <Card className="h-full flex flex-col overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-shadow hover:shadow-xl">
+      <Card className="h-full flex flex-col overflow-hidden border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-shadow hover:shadow-xl relative">
         <div className="relative aspect-square overflow-hidden bg-zinc-100 dark:bg-zinc-900">
           {product.isNew && (
             <Badge className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground">
@@ -51,14 +54,30 @@ export function ProductCard({ product }: { product: Product }) {
               Oferta
             </Badge>
           )}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              toggleFavorite(product.id);
+            }}
+            className="absolute bottom-3 right-3 z-20 p-2 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-md shadow-sm border border-zinc-200/50 dark:border-zinc-800/50 hover:scale-110 transition-transform"
+            aria-label={isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+          >
+            <Heart 
+              className={`h-5 w-5 transition-colors ${
+                isFav ? "fill-red-500 text-red-500" : "text-zinc-600 dark:text-zinc-400"
+              }`} 
+            />
+          </button>
           {/* Usamos o Next Image para otimização automática */}
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
+          <Link href={`/produto/${product.id}`} className="block w-full h-full">
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </Link>
         </div>
         
         <CardContent className="flex-1 p-5">
@@ -71,6 +90,7 @@ export function ProductCard({ product }: { product: Product }) {
           <div className="flex items-center gap-1 mb-4">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-medium">{product.rating}</span>
+            <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
           </div>
           
           <div className="mt-auto">

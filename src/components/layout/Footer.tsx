@@ -1,6 +1,65 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isValidEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      toast.error("Por favor, insira seu e-mail.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      toast.error("Por favor, insira um e-mail válido.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Simula uma chamada de API
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    setIsLoading(false);
+    setEmail("");
+    toast.success("Inscrição realizada com sucesso! 🎉", {
+      description: "Você receberá nossas melhores ofertas no seu e-mail.",
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <Input
+        type="email"
+        placeholder="Seu melhor e-mail"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="bg-white dark:bg-zinc-900"
+        disabled={isLoading}
+      />
+      <Button type="submit" disabled={isLoading} className="shrink-0">
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          "Assinar"
+        )}
+      </Button>
+    </form>
+  );
+}
 
 export function Footer() {
   return (
@@ -33,10 +92,7 @@ export function Footer() {
         <div>
           <h3 className="font-heading font-semibold mb-4 text-foreground">Newsletter</h3>
           <p className="text-sm text-muted-foreground mb-4">Receba ofertas exclusivas para músicos e dicas de equipamentos.</p>
-          <div className="flex gap-2">
-            <Input type="email" placeholder="Seu melhor e-mail" className="bg-white dark:bg-zinc-900" />
-            <Button>Assinar</Button>
-          </div>
+          <NewsletterForm />
         </div>
       </div>
       <div className="container mx-auto mt-12 border-t border-zinc-200 dark:border-zinc-800 pt-8 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
