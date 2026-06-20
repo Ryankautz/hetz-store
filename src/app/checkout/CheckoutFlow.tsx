@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle2,
   ChevronRight,
@@ -19,11 +20,28 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  maskCPF,
+  maskPhone,
+  maskCEP,
+  maskCardNumber,
+  maskExpiry,
+  maskCVV,
+} from "@/lib/masks";
+import {
+  validateEmail,
+  validateCPF,
+  validatePhone,
+  validateCEP,
+  validateCardNumber,
+  validateExpiry,
+  validateCVV,
+} from "@/lib/validations";
 
 type CheckoutStep = "personal" | "address" | "payment" | "success";
 
 export function CheckoutFlow() {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { items: cartItems, cartTotal, clearCart } = useCart();
   const router = useRouter();
 
   const [step, setStep] = useState<CheckoutStep>("personal");
@@ -33,8 +51,10 @@ export function CheckoutFlow() {
   // Form states
   const [personal, setPersonal] = useState({ name: "", email: "", phone: "", document: "" });
   const [address, setAddress] = useState({ zip: "", street: "", number: "", comp: "", district: "", city: "", state: "" });
+  const [card, setCard] = useState({ number: "", holderName: "", expiry: "", cvv: "" });
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -61,8 +81,54 @@ export function CheckoutFlow() {
       toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
+    if (!validateEmail(personal.email)) {
+      toast.error("Por favor, informe um e-mail válido.");
+      return;
+    }
+    if (!validateCPF(personal.document)) {
+      toast.error("Por favor, informe um CPF válido.");
+      return;
+    }
+    if (!validatePhone(personal.phone)) {
+      toast.error("Por favor, informe um telefone válido.");
+      return;
+    }
     setStep("address");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const maskedCep = maskCEP(e.target.value);
+    setAddress((prev) => ({ ...prev, zip: maskedCep }));
+
+    const cleanCep = maskedCep.replace(/\D/g, "");
+    if (cleanCep.length === 8) {
+      setIsFetchingCep(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await res.json();
+        if (data.erro) {
+          toast.error("CEP não encontrado. Digite o endereço manualmente.");
+        } else {
+          setAddress((prev) => ({
+            ...prev,
+            street: data.logradouro || prev.street,
+            district: data.bairro || prev.district,
+            city: data.localidade || prev.city,
+            state: data.uf || prev.state,
+          }));
+          toast.success("Endereço preenchido com sucesso!");
+          setTimeout(() => {
+            const numberInput = document.getElementById("number-input");
+            if (numberInput) numberInput.focus();
+          }, 100);
+        }
+      } catch (error) {
+        toast.error("Erro ao buscar o CEP. Digite o endereço manualmente.");
+      } finally {
+        setIsFetchingCep(false);
+      }
+    }
   };
 
   const handleAddressSubmit = (e: React.FormEvent) => {
@@ -71,12 +137,36 @@ export function CheckoutFlow() {
       toast.error("Por favor, preencha todos os campos de endereço obrigatórios.");
       return;
     }
+    if (!validateCEP(address.zip)) {
+      toast.error("Por favor, informe um CEP válido.");
+      return;
+    }
     setStep("payment");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (paymentMethod === "credit_card") {
+      if (!card.number || !card.holderName || !card.expiry || !card.cvv) {
+        toast.error("Por favor, preencha todos os dados do cartão.");
+        return;
+      }
+      if (!validateCardNumber(card.number)) {
+        toast.error("Número de cartão inválido (deve conter 16 dígitos).");
+        return;
+      }
+      if (!validateExpiry(card.expiry)) {
+        toast.error("Validade do cartão vencida ou no formato incorreto (MM/AA).");
+        return;
+      }
+      if (!validateCVV(card.cvv)) {
+        toast.error("Código CVV inválido (deve conter 3 ou 4 dígitos).");
+        return;
+      }
+    }
+
     setIsProcessing(true);
     
     // Simulate API call
@@ -165,12 +255,12 @@ export function CheckoutFlow() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">CPF / CNPJ</label>
-                      <Input required value={personal.document} onChange={(e) => setPersonal({...personal, document: e.target.value})} placeholder="000.000.000-00" className="bg-zinc-50 dark:bg-zinc-900" />
+                      <Input required value={personal.document} onChange={(e) => setPersonal({...personal, document: maskCPF(e.target.value)})} placeholder="000.000.000-00" className="bg-zinc-50 dark:bg-zinc-900" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Telefone / WhatsApp</label>
-                    <Input required type="tel" value={personal.phone} onChange={(e) => setPersonal({...personal, phone: e.target.value})} placeholder="(00) 90000-0000" className="bg-zinc-50 dark:bg-zinc-900" />
+                    <Input required type="tel" value={personal.phone} onChange={(e) => setPersonal({...personal, phone: maskPhone(e.target.value)})} placeholder="(00) 90000-0000" className="bg-zinc-50 dark:bg-zinc-900" />
                   </div>
                   <Button type="submit" size="lg" className="w-full mt-6 gap-2">
                     Continuar para Endereço <ChevronRight className="w-4 h-4" />
@@ -194,8 +284,10 @@ export function CheckoutFlow() {
                 <form onSubmit={handleAddressSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2 md:col-span-1">
-                      <label className="text-sm font-medium">CEP</label>
-                      <Input required value={address.zip} onChange={(e) => setAddress({...address, zip: e.target.value})} placeholder="00000-000" className="bg-zinc-50 dark:bg-zinc-900" />
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        CEP {isFetchingCep && <span className="text-xs text-primary animate-pulse">(Buscando...)</span>}
+                      </label>
+                      <Input required value={address.zip} onChange={handleCepChange} disabled={isFetchingCep} placeholder="00000-000" className="bg-zinc-50 dark:bg-zinc-900 disabled:opacity-75" />
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-sm font-medium">Rua / Avenida</label>
@@ -205,7 +297,7 @@ export function CheckoutFlow() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Número</label>
-                      <Input required value={address.number} onChange={(e) => setAddress({...address, number: e.target.value})} placeholder="123" className="bg-zinc-50 dark:bg-zinc-900" />
+                      <Input id="number-input" required value={address.number} onChange={(e) => setAddress({...address, number: e.target.value})} placeholder="123" className="bg-zinc-50 dark:bg-zinc-900" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Complemento <span className="text-muted-foreground font-normal">(Opcional)</span></label>
@@ -280,20 +372,20 @@ export function CheckoutFlow() {
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-4 pt-2">
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Número do Cartão</label>
-                        <Input required placeholder="0000 0000 0000 0000" className="bg-zinc-50 dark:bg-zinc-900" />
+                        <Input required value={card.number} onChange={(e) => setCard({...card, number: maskCardNumber(e.target.value)})} placeholder="0000 0000 0000 0000" className="bg-zinc-50 dark:bg-zinc-900" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Nome Impresso no Cartão</label>
-                        <Input required placeholder="JOAO DA SILVA" className="bg-zinc-50 dark:bg-zinc-900" />
+                        <Input required value={card.holderName} onChange={(e) => setCard({...card, holderName: e.target.value.toUpperCase()})} placeholder="JOAO DA SILVA" className="bg-zinc-50 dark:bg-zinc-900" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Validade</label>
-                          <Input required placeholder="MM/AA" className="bg-zinc-50 dark:bg-zinc-900" />
+                          <Input required value={card.expiry} onChange={(e) => setCard({...card, expiry: maskExpiry(e.target.value)})} placeholder="MM/AA" className="bg-zinc-50 dark:bg-zinc-900" />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium">CVV</label>
-                          <Input required placeholder="123" type="password" maxLength={4} className="bg-zinc-50 dark:bg-zinc-900" />
+                          <Input required value={card.cvv} onChange={(e) => setCard({...card, cvv: maskCVV(e.target.value)})} placeholder="123" type="password" maxLength={4} className="bg-zinc-50 dark:bg-zinc-900" />
                         </div>
                       </div>
                       <div className="space-y-2">
