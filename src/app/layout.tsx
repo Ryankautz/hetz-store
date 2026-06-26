@@ -20,6 +20,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://hetz-store.vercel.app"),
   title: "Hetz Store | Instrumentos e Equipamentos Musicais",
   description: "A melhor loja para músicos. Encontre guitarras, fones de ouvido, pedais e muito mais.",
 };

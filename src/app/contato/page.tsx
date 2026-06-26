@@ -1,13 +1,58 @@
-import type { Metadata } from "next";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Fale Conosco | Hetz Store",
-  description:
-    "Entre em contato com a Hetz Store. Tire dúvidas sobre produtos, pedidos, trocas e devoluções. Estamos prontos para ajudar.",
-};
+import { useState } from "react";
+import { Mail, Phone, MapPin, Clock, Loader2, Send } from "lucide-react";
+import { toast } from "sonner";
+import { validateEmail } from "@/lib/validations";
 
 export default function ContatoPage() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    const key = id.replace("contact-", "");
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject || !formData.message.trim()) {
+      toast.error("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      toast.error("Por favor, informe um e-mail válido.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Simulate sending message
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
+    setIsSubmitting(false);
+    toast.success("Mensagem enviada com sucesso! 🎉", {
+      description: "Entraremos em contato com você em breve.",
+    });
+
+    setFormData({
+      name: "",
+      email: "",
+      subject: "",
+      message: "",
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -98,12 +143,12 @@ export default function ContatoPage() {
               </div>
             </div>
 
-            {/* Contact Form (visual only) */}
+            {/* Contact Form */}
             <div className="bg-white dark:bg-zinc-900/60 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 p-8 shadow-sm">
               <h2 className="font-heading text-xl font-bold tracking-tight mb-6">
                 Envie uma Mensagem
               </h2>
-              <form className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <label
                     htmlFor="contact-name"
@@ -114,8 +159,12 @@ export default function ContatoPage() {
                   <input
                     id="contact-name"
                     type="text"
+                    required
                     placeholder="Seu nome"
-                    className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 placeholder:text-muted-foreground"
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 placeholder:text-muted-foreground disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -128,8 +177,12 @@ export default function ContatoPage() {
                   <input
                     id="contact-email"
                     type="email"
+                    required
                     placeholder="seu@email.com"
-                    className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 placeholder:text-muted-foreground"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 placeholder:text-muted-foreground disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -141,7 +194,11 @@ export default function ContatoPage() {
                   </label>
                   <select
                     id="contact-subject"
-                    className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-zinc-900 cursor-pointer text-foreground"
+                    required
+                    value={formData.subject}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full h-10 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-zinc-900 cursor-pointer text-foreground disabled:opacity-50 text-ellipsis"
                   >
                     <option value="">Selecione um assunto</option>
                     <option value="duvida">Dúvida sobre produto</option>
@@ -159,16 +216,31 @@ export default function ContatoPage() {
                   </label>
                   <textarea
                     id="contact-message"
+                    required
                     rows={4}
                     placeholder="Descreva sua dúvida ou solicitação..."
-                    className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 placeholder:text-muted-foreground resize-none"
+                    value={formData.message}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 placeholder:text-muted-foreground resize-none disabled:opacity-50"
                   />
                 </div>
                 <button
-                  type="button"
-                  className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-primary/90 disabled:opacity-75 flex items-center justify-center gap-2"
                 >
-                  Enviar Mensagem
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Enviar Mensagem
+                    </>
+                  )}
                 </button>
               </form>
             </div>

@@ -18,6 +18,9 @@ import {
   Package,
   ShoppingBag,
   User,
+  Copy,
+  Check,
+  Truck,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -47,6 +50,16 @@ export function CheckoutFlow() {
   const [step, setStep] = useState<CheckoutStep>("personal");
   const [isMounted, setIsMounted] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyOrderId = () => {
+    if (orderId) {
+      navigator.clipboard.writeText(orderId);
+      setCopied(true);
+      toast.success("Código do pedido copiado para a área de transferência!");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   // Form states
   const [personal, setPersonal] = useState({ name: "", email: "", phone: "", document: "" });
@@ -441,11 +454,25 @@ export function CheckoutFlow() {
                   <div className="grid grid-cols-2 gap-y-4">
                     <div>
                       <p className="text-xs text-muted-foreground">Número do Pedido</p>
-                      <p className="font-semibold">{orderId}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-semibold">{orderId}</span>
+                        <button
+                          type="button"
+                          onClick={handleCopyOrderId}
+                          className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          title="Copiar número do pedido"
+                        >
+                          {copied ? (
+                            <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Previsão de Entrega</p>
-                      <p className="font-semibold">3 a 5 dias úteis</p>
+                      <p className="font-semibold mt-1">3 a 5 dias úteis</p>
                     </div>
                     <div className="col-span-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                       <p className="text-xs text-muted-foreground mb-1">Endereço de Entrega</p>
@@ -457,11 +484,18 @@ export function CheckoutFlow() {
                   </div>
                 </div>
 
-                <Link href="/">
-                  <Button size="lg" className="w-full sm:w-auto px-8 gap-2">
-                    <ShoppingBag className="w-4 h-4" /> Continuar Comprando
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link href="/">
+                    <Button size="lg" className="w-full sm:w-auto px-8 gap-2">
+                      <ShoppingBag className="w-4 h-4" /> Continuar Comprando
+                    </Button>
+                  </Link>
+                  <Link href={`/rastreio?code=${orderId}`}>
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 gap-2">
+                      <Truck className="w-4 h-4" /> Acompanhar Entrega
+                    </Button>
+                  </Link>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
